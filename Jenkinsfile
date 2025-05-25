@@ -283,13 +283,30 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \\
 CMD ["./app"]''')
                     }
                     
-                    echo "Building Docker image..."
-                    def appImage = docker.build("${DOCKER_IMAGE}:${DOCKER_TAG}")
-                    
-                    echo "Tagging image as latest..."
-                    sh "docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest"
-                    
-                    echo "✅ Docker image built successfully: ${DOCKER_IMAGE}:${DOCKER_TAG}"
+                    try {
+                        echo "Building Docker image..."
+                        sh "docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} ."
+                        
+                        echo "Tagging image as latest..."
+                        sh "docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest"
+                        
+                        echo "✅ Docker image built successfully: ${DOCKER_IMAGE}:${DOCKER_TAG}"
+                        
+                        // Test the image
+                        echo "Testing the built image..."
+                        sh """
+                            docker run --rm -d --name test-container-${BUILD_NUMBER} ${DOCKER_IMAGE}:${DOCKER_TAG}
+                            sleep 5
+                            docker logs test-container-${BUILD_NUMBER} || true
+                            docker stop test-container-${BUILD_NUMBER} || true
+                        """
+                        
+                    } catch (Exception e) {
+                        echo "❌ Docker build failed: ${e.getMessage()}"
+                        echo "📋 Build logs:"
+                        sh "docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} . || true"
+                        throw e
+                    }
                 }
             }
         }
