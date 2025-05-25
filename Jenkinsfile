@@ -87,29 +87,36 @@ node {
     }
     
     stage('Deploy Application') {
-        echo '🚀 Deploying application...'
-        sh '''
-            # Stop any existing containers
-            docker stop frontend-container backend-container 2>/dev/null || true
-            docker rm frontend-container backend-container 2>/dev/null || true
-            
-            # Start backend container
-            docker run -d --name backend-container \
-                -p 8080:8080 \
-                --network bridge \
-                backend-app:latest
-            
-            # Start frontend container
-            docker run -d --name frontend-container \
-                -p 3000:3000 \
-                --network bridge \
-                frontend-app:latest
-            
-            echo "✅ Application deployed successfully"
-            echo "Frontend: http://localhost:3000"
-            echo "Backend: http://localhost:8080"
-        '''
-    }
+    echo '🚀 Deploying application...'
+    sh '''
+        # Stop and remove existing containers
+        docker stop frontend-container backend-container 2>/dev/null || true
+        docker rm frontend-container backend-container 2>/dev/null || true
+        
+        # Use alternative ports to avoid conflicts
+        BACKEND_PORT=8081
+        FRONTEND_PORT=3001
+        
+        echo "=== STARTING BACKEND ON PORT $BACKEND_PORT ==="
+        docker run -d --name backend-container \
+            -p $BACKEND_PORT:8080 \
+            --restart unless-stopped \
+            backend-app:latest
+        
+        echo "=== STARTING FRONTEND ON PORT $FRONTEND_PORT ==="
+        docker run -d --name frontend-container \
+            -p $FRONTEND_PORT:3000 \
+            --restart unless-stopped \
+            frontend-app:latest
+        
+        echo "=== VERIFYING CONTAINERS ==="
+        docker ps --filter name=frontend-container --filter name=backend-container
+        
+        echo "✅ Application deployed successfully"
+        echo "Frontend: http://localhost:$FRONTEND_PORT"
+        echo "Backend: http://localhost:$BACKEND_PORT"
+    '''
+}
     
     stage('Application Health Check') {
         echo '🏥 Performing health checks...'
