@@ -243,13 +243,20 @@ EOF
                         echo "Creating multi-stage Dockerfile for React + Go stack..."
                         writeFile(file: 'Dockerfile', text: '''# Multi-stage build for React frontend + Go backend
 
-# Stage 1: Build Frontend (React)
-FROM node:18-alpine as frontend-build
+# Stage 1: Build Frontend (React) with dependency fixes
+FROM node:16-alpine as frontend-build
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
-RUN npm ci
+
+# Clean install with legacy peer deps to handle React 17 + old dependencies
+RUN npm ci --legacy-peer-deps --force || npm install --legacy-peer-deps --force
+
 COPY frontend/ .
-RUN npm run build
+
+# Build with environment variable to handle PostCSS issues
+ENV GENERATE_SOURCEMAP=false
+ENV SKIP_PREFLIGHT_CHECK=true
+RUN npm run build || (npm install --legacy-peer-deps --force && npm run build)
 
 # Stage 2: Build Backend (Go)
 FROM golang:1.21-alpine as backend-build
