@@ -436,21 +436,25 @@ CMD ["./app"]''')
         success {
             script {
                 if (env.DOCKER_AVAILABLE == 'true') {
-                    echo '🎉 Deployment completed successfully!'
-                    echo ""
-                    echo "🚀 Your React + Go fullstack application is now running!"
-                    echo "📱 Application: http://your-server:${APP_PORT}"
-                    echo "🔍 Health Check: http://your-server:${APP_PORT}/health"
-                    echo "📊 Build Number: ${BUILD_NUMBER}"
-                    echo ""
-                    echo "To view logs: docker logs fullstack-app-container"
-                    echo "To stop: docker stop fullstack-app-container"
+                    sh '''
+                        echo "🎉 Deployment completed successfully!"
+                        echo ""
+                        echo "🚀 Your React + Go fullstack application is now running!"
+                        echo "📱 Application: http://your-server:${APP_PORT}"
+                        echo "🔍 Health Check: http://your-server:${APP_PORT}/health"
+                        echo "📊 Build Number: ${BUILD_NUMBER}"
+                        echo ""
+                        echo "To view logs: docker logs fullstack-app-container"
+                        echo "To stop: docker stop fullstack-app-container"
+                    '''
                 } else {
-                    echo '✅ Build verification completed!'
-                    echo ""
-                    echo "⚠️ Docker was not available, but build process was verified"
-                    echo "🔧 Fix Docker permissions to enable full deployment"
-                    echo "📋 Check the manual deployment instructions above"
+                    sh '''
+                        echo "✅ Build verification completed!"
+                        echo ""
+                        echo "⚠️ Docker was not available, but build process was verified"
+                        echo "🔧 Fix Docker permissions to enable full deployment"
+                        echo "📋 Check the manual deployment instructions above"
+                    '''
                 }
             }
         }
@@ -477,9 +481,15 @@ CMD ["./app"]''')
         }
         
         unstable {
-            echo '⚠️ Pipeline completed with warnings'
-            if (env.DOCKER_AVAILABLE == 'true') {
-                echo "✅ Application may still be running at: http://your-server:${APP_PORT}"
+            script {
+                sh '''
+                    echo "⚠️ Pipeline completed with warnings"
+                '''
+                if (env.DOCKER_AVAILABLE == 'true') {
+                    sh '''
+                        echo "✅ Application may still be running at: http://your-server:${APP_PORT}"
+                    '''
+                }
             }
         }
     }
